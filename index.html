@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-amber-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gana con tus Empanadas - Ruleta de la Fortuna</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        empanada: {
+                            50: '#fffbe6',
+                            100: '#fff3b8',
+                            400: '#f59e0b',
+                            500: '#d97706',
+                            600: '#b45309',
+                            800: '#78350f',
+                            900: '#451a03',
+                        },
+                        salsa: {
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .wheel-shadow {
+            filter: drop-shadow(0px 10px 15px rgba(120, 53, 15, 0.3));
+        }
+        .ticket-pattern {
+            background-color: #ffffff;
+            background-image: radial-gradient(#d97706 0.75px, transparent 0.75px), radial-gradient(#d97706 0.75px, #ffffff 0.75px);
+            background-size: 30px 30px;
+            background-position: 0 0,15px 15px;
+            background-opacity: 0.05;
+        }
+    </style>
+</head>
+<body class="min-h-full flex flex-col text-slate-800 antialiased selection:bg-amber-200">
+
+    <!-- Header / Navbar -->
+    <header class="bg-gradient-to-r from-empanada-600 via-empanada-500 to-salsa-600 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white p-2 rounded-full text-empanada-600 shadow-md flex items-center justify-center w-10 h-10 text-xl leading-none">
+                    🥟
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xl md:text-2xl tracking-tight leading-none">La Empanada Del Cementerio II</h1>
+                    <p class="text-xs text-amber-100 font-medium">¡Sabor crujiente en cada bocado!</p>
+                </div>
+            </div>
+            <button type="button" id="btnAdminOpen" onclick="openAdminAuthModal()" class="bg-amber-800/40 hover:bg-amber-800/70 text-xs md:text-sm px-3 py-1.5 rounded-lg border border-amber-300/30 transition flex items-center gap-2 cursor-pointer z-40">
+                <i class="fa-solid fa-lock"></i>
+                <span class="hidden sm:inline">Panel Admin</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Content Container -->
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left Column: Form & Info -->
+        <section class="lg:col-span-5 space-y-6">
+            
+            <!-- Banner Card -->
+            <div class="bg-gradient-to-br from-amber-500 to-empanada-600 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-6 -bottom-6 opacity-20 pointer-events-none">
+                    <i class="fa-solid fa-utensils text-9xl"></i>
+                </div>
+                <span class="inline-block bg-salsa-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2 shadow">
+                    Premio Diario
+                </span>
+                <h2 class="text-2xl md:text-3xl font-extrabold mb-2 leading-tight">¡Gira la Ruleta y Gana tu Desayuno!</h2>
+                <p class="text-amber-100 text-sm">
+                    Registra tus datos una vez al día y prueba tu suerte. Puedes obtener desde bebidas frías hasta un combo completo gratis.
+                </p>
+            </div>
+
+            <!-- Form Card -->
+            <div class="bg-white rounded-2xl p-6 shadow-md border border-amber-100">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-3">
+                    <i class="fa-solid fa-id-card text-empanada-500"></i>
+                    Ingresa tus Datos para Jugar
+                </h3>
+
+                <form id="spinForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                    <div>
+                        <label for="cedula" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                            Cédula de Identidad (ID Unico)
+                        </label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-address-card"></i>
+                            </span>
+                            <input type="text" id="cedula" required pattern="[0-9]{5,12}" placeholder="Ej: 12345678"
+                                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-empanada-500 focus:border-empanada-500 transition text-slate-800 font-medium">
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">Tu número de cédula garantiza tu intento diario único.</p>
+                    </div>
+
+                    <div>
+                        <label for="nombre" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                            Nombre Completo
+                        </label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-user"></i>
+                            </span>
+                            <input type="text" id="nombre" required minlength="3" placeholder="Ej: Maria Perez"
+                                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-empanada-500 focus:border-empanada-500 transition text-slate-800 font-medium">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btnHabilitar"
+                        class="w-full bg-gradient-to-r from-empanada-500 to-salsa-600 hover:from-empanada-600 hover:to-salsa-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-key"></i>
+                        <span>Validar e Iniciar Ruleta</span>
+                    </button>
+                </form>
+
+                <!-- Daily Status Warning Message Box -->
+                <div id="statusAlert" class="hidden mt-4 p-4 rounded-xl text-sm font-medium border"></div>
+            </div>
+
+            <!-- Premios Info Grid -->
+            <div class="bg-amber-100/60 rounded-2xl p-4 border border-amber-200/80 space-y-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-empanada-800 text-center">Premios Disponibles Hoy</h4>
+                <div class="grid grid-cols-1 gap-2.5 text-xs text-slate-700">
+                    <div class="bg-white p-3 rounded-xl shadow-sm border border-amber-200 flex items-start gap-3">
+                        <div class="bg-amber-400 text-amber-950 p-2 rounded-lg text-lg flex items-center justify-center">⭐</div>
+                        <div>
+                            <strong class="text-amber-800 font-extrabold block text-sm">La Empanada Dorada</strong>
+                            <p class="text-slate-600 text-[11px] leading-snug">Consiste en un desayuno completo con dos empanadas de cualquier tipo (tradicionales o premium) y una bebida a tu preferencia (malta, refresco, jugo o café).</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl shadow-sm border border-amber-200 flex items-start gap-3">
+                        <div class="bg-amber-500 text-white p-2 rounded-lg text-lg flex items-center justify-center">🥟</div>
+                        <div>
+                            <strong class="text-amber-800 font-extrabold block text-sm">Empanada Gratis</strong>
+                            <p class="text-slate-600 text-[11px] leading-snug">Puedes seleccionar una empanada totalmente gratuita de cualquier tipo (ya sea premium o tradicional).</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl shadow-sm border border-amber-200 flex items-start gap-3">
+                        <div class="bg-amber-500 text-white p-2 rounded-lg text-lg flex items-center justify-center">🥤</div>
+                        <div>
+                            <strong class="text-amber-800 font-extrabold block text-sm">Bebida Gratis</strong>
+                            <p class="text-slate-600 text-[11px] leading-snug">Opciones a escoger: malta, refresco o café de tu preferencia (no aplican bebidas de 1 litro en adelante).</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl shadow-sm border border-blue-200 flex items-start gap-3">
+                        <div class="bg-blue-400 text-white p-2 rounded-lg text-lg flex items-center justify-center">🔄</div>
+                        <div>
+                            <strong class="text-blue-800 font-extrabold block text-sm">Segunda Oportunidad</strong>
+                            <p class="text-slate-600 text-[11px] leading-snug">¡Gana un intento extra inmediatamente para volver a girar la ruleta hoy mismo!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Canvas Wheel Interactive Zone -->
+        <section class="lg:col-span-7 flex flex-col items-center justify-center">
+            
+            <div class="relative w-full max-w-[420px] aspect-square flex items-center justify-center">
+                
+                <!-- Pointer/Marker -->
+                <div class="absolute top-0 z-20 transform -translate-y-2 filter drop-shadow-md">
+                    <svg width="40" height="50" viewBox="0 0 40 50" fill="none">
+                        <path d="M20 50L2 10C-2 4 2 0 10 0H30C38 0 42 4 38 10L20 50Z" fill="#dc2626"/>
+                        <circle cx="20" cy="14" r="6" fill="#ffffff"/>
+                    </svg>
+                </div>
+
+                <!-- Canvas Container with Shadow -->
+                <div class="w-full h-full p-2 bg-gradient-to-tr from-empanada-600 via-amber-400 to-salsa-600 rounded-full shadow-2xl flex items-center justify-center border-4 border-amber-200">
+                    <canvas id="wheelCanvas" width="500" height="500" class="w-full h-full rounded-full cursor-pointer transition-transform duration-300"></canvas>
+                </div>
+
+                <!-- Center Decorative Cap / Spin Button overlay -->
+                <button id="spinCenterBtn" onclick="triggerSpin()" disabled
+                    class="absolute z-10 w-24 h-24 rounded-full bg-gradient-to-b from-amber-400 to-empanada-600 text-white font-black text-sm uppercase tracking-wider shadow-2xl border-4 border-white flex flex-col items-center justify-center transform hover:scale-105 active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed transition">
+                    <i class="fa-solid fa-rotate-right text-xl mb-0.5 animate-spin-slow"></i>
+                    <span id="spinBtnText">REGÍSTRATE</span>
+                </button>
+            </div>
+
+            <!-- Dynamic Hint -->
+            <p id="wheelHint" class="mt-6 text-sm font-semibold text-amber-800 bg-amber-100 px-4 py-2 rounded-full border border-amber-200 text-center animate-pulse">
+                👇 Ingresa tu Nombre y Cédula a la izquierda para girar.
+            </p>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-4 text-center mt-auto border-t border-slate-800">
+        <p>La Empanada Del Cementerio II © J-295471327, 2026. Válido 1 premio por persona por día.</p>
+    </footer>
+
+    <!-- Winner Modal / Ticket Modal -->
+    <div id="winnerModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 text-center shadow-2xl border-4 border-amber-400 relative overflow-hidden transform transition-all scale-95 opacity-0 duration-300" id="winnerModalContent">
+            
+            <button onclick="closeWinnerModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full w-8 h-8 flex items-center justify-center">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="w-16 h-16 bg-amber-100 text-empanada-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
+                <i class="fa-solid fa-trophy text-3xl"></i>
+            </div>
+
+            <h3 class="text-2xl font-black text-slate-800 mb-1">¡Felicidades!</h3>
+            <p id="modalUserName" class="text-sm font-medium text-slate-500 mb-4">Cliente Registrado</p>
+
+            <!-- Virtual Ticket -->
+            <div class="ticket-pattern border-2 border-dashed border-amber-400 rounded-2xl p-4 my-4 relative text-left shadow-sm">
+                <div class="flex justify-between items-start border-b border-amber-200 pb-2 mb-3">
+                    <div>
+                        <span class="text-[10px] font-bold text-amber-600 uppercase tracking-widest block">Premio Obtenido</span>
+                        <h4 id="modalPrizeTitle" class="text-xl font-black text-empanada-600">Empanada Gratis</h4>
+                    </div>
+                    <i class="fa-solid fa-gift text-2xl text-salsa-500"></i>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+                    <div>
+                        <span class="text-slate-400 block text-[10px]">CÉDULA</span>
+                        <span id="modalCedula" class="font-bold text-slate-700">12345678</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[10px]">FECHA DE CANJE</span>
+                        <span id="modalDate" class="font-bold text-slate-700">09/11/2026</span>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-center">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Código de Cupón Único</span>
+                    <span id="modalCouponCode" class="font-mono font-bold text-lg text-salsa-600 tracking-widest select-all">EMP-89F2A</span>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-500 mb-5">
+                Muestra la captura de este pantalla o tu Cédula en caja para hacer efectivo tu premio hoy.
+            </p>
+
+            <button onclick="closeWinnerModal()" class="w-full bg-empanada-500 hover:bg-empanada-600 text-white font-bold py-3 rounded-xl shadow-md transition">
+                ¡Entendido, ir a pedir!
+            </button>
+        </div>
+    </div>
+
+    <!-- Admin Password Prompt Modal -->
+    <div id="adminAuthModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-xs w-full p-6 text-center shadow-2xl border border-amber-200">
+            <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fa-solid fa-key text-xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-1">Acceso Administrador</h3>
+            <p class="text-xs text-slate-500 mb-4">Ingresa el PIN de seguridad</p>
+            
+            <form onsubmit="submitAdminAuth(event)" class="space-y-3">
+                <input type="password" id="adminPassInput" placeholder="PIN de acceso" required autofocus maxlength="10"
+                    class="w-full px-4 py-2 text-center text-lg font-bold tracking-widest border border-slate-300 rounded-xl focus:ring-2 focus:ring-empanada-500 focus:outline-none">
+                <p id="adminAuthError" class="text-xs text-red-600 font-semibold hidden">Clave incorrecta. Intenta de nuevo.</p>
+                
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeAdminAuthModal()" class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs py-2.5 rounded-xl font-bold transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="w-1/2 bg-empanada-500 hover:bg-empanada-600 text-white text-xs py-2.5 rounded-xl font-bold transition">
+                        Ingresar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin / History Database Modal -->
+    <div id="adminModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-database text-empanada-500"></i>
+                    Base de Datos de Clientes & Giros
+                </h3>
+                <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex flex-wrap gap-2 justify-between mb-4">
+                <input type="text" id="adminSearch" oninput="filterAdminTable()" placeholder="Buscar por Cédula o Nombre..." 
+                    class="px-3 py-1.5 text-sm rounded-lg border border-slate-300 w-full sm:w-64">
+                
+                <div class="flex gap-2">
+                    <button onclick="exportToCSV()" class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-2 rounded-lg font-bold transition flex items-center gap-1">
+                        <i class="fa-solid fa-file-excel"></i> Exportar CSV
+                    </button>
+                    <button onclick="clearDatabase()" class="bg-salsa-600 hover:bg-salsa-700 text-white text-xs px-3 py-2 rounded-lg font-bold transition flex items-center gap-1">
+                        <i class="fa-solid fa-trash"></i> Limpiar DB
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-y-auto flex-grow border border-slate-200 rounded-xl">
+                <table class="w-full text-left text-xs text-slate-600">
+                    <thead class="bg-slate-100 text-slate-700 uppercase font-bold sticky top-0 border-b">
+                        <tr>
+                            <th class="p-3">Cédula (PK)</th>
+                            <th class="p-3">Nombre</th>
+                            <th class="p-3">Último Giro</th>
+                            <th class="p-3">Premio Obtenido</th>
+                            <th class="p-3 text-center">Código Cupón</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody" class="divide-y divide-slate-100">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 pt-3 border-t text-right">
+                <button onclick="closeAdminModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs px-4 py-2 rounded-lg font-bold">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Game & Storage Engine -->
+    <script>
+        // 1. Wheel Setup, Interleaved Prizes, and Weighted Probabilities (+1% increased for prizes, total 100%)
+        const prizes = [
+            { label: '⭐ Empanada Dorada', color: '#F59E0B', textColor: '#ffffff', weight: 0.03, isPrize: true },
+            { label: '😜 Suerte a la próxima', color: '#92400E', textColor: '#fef3c7', weight: 0.19, isPrize: false },
+            { label: '🥟 Empanada Gratis', color: '#FBBF24', textColor: '#78350f', weight: 0.04, isPrize: true },
+            { label: '😜 Suerte a la próxima', color: '#92400E', textColor: '#fef3c7', weight: 0.19, isPrize: false },
+            { label: '🥤 Bebida Gratis', color: '#FCD34D', textColor: '#78350f', weight: 0.06, isPrize: true },
+            { label: '😜 Suerte a la próxima', color: '#92400E', textColor: '#fef3c7', weight: 0.19, isPrize: false },
+            { label: '🔄️ Segunda Oportunidad', color: '#60A5FA', textColor: '#1e3a8a', weight: 0.11, isPrize: false, isExtraTurn: true },
+            { label: '😜 Suerte a la próxima', color: '#92400E', textColor: '#fef3c7', weight: 0.19, isPrize: false }
+        ];
+
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const numSlices = prizes.length;
+        const sliceAngle = (2 * Math.PI) / numSlices;
+        
+        let currentAngle = 0;
+        let isSpinning = false;
+        let activeUser = null;
+        let hasExtraTurn = false;
+
+        // Audio Effects (Web Audio API)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTickSound() {
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.04);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.04);
+            } catch(e){}
+        }
+
+        // Draw Wheel Canvas
+        function drawWheel() {
+            const width = canvas.width;
+            const height = canvas.height;
+            const radius = width / 2;
+
+            ctx.clearRect(0, 0, width, height);
+
+            ctx.save();
+            ctx.translate(radius, radius);
+            ctx.rotate(currentAngle);
+
+            for (let i = 0; i < numSlices; i++) {
+                const angle = i * sliceAngle;
+                
+                // Draw Sector
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, radius - 10, angle, angle + sliceAngle);
+                ctx.closePath();
+                ctx.fillStyle = prizes[i].color;
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+
+                // Draw Text
+                ctx.save();
+                ctx.rotate(angle + sliceAngle / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = prizes[i].textColor;
+                ctx.font = 'bold 15px Poppins';
+                ctx.fillText(prizes[i].label, radius - 35, 5);
+                ctx.restore();
+            }
+
+            // Outer Ring Decoration
+            ctx.restore();
+            ctx.beginPath();
+            ctx.arc(radius, radius, radius - 5, 0, 2 * Math.PI);
+            ctx.lineWidth = 10;
+            ctx.strokeStyle = '#fef3c7';
+            ctx.stroke();
+        }
+
+        // Initial Draw
+        drawWheel();
+
+        // 2. Database & LocalStorage Helper Functions
+        const DB_KEY = 'don_empanada_customers_db';
+
+        function getDB() {
+            const data = localStorage.getItem(DB_KEY);
+            return data ? JSON.parse(data) : {};
+        }
+
+        function saveDB(db) {
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+        }
+
+        function getTodayDateString() {
+            const today = new Date();
+            return today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+        }
+
+        // Weighted Random Selection Algorithm
+        function getWeightedRandomSliceIndex() {
+            const rand = Math.random();
+            let cumulative = 0;
+            for (let i = 0; i < prizes.length; i++) {
+                cumulative += prizes[i].weight;
+                if (rand <= cumulative) {
+                    return i;
+                }
+            }
+            return prizes.length - 1;
+        }
+
+        // 3. User Validation & Form Handling
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            const cedulaInput = document.getElementById('cedula').value.trim();
+            const nombreInput = document.getElementById('nombre').value.trim();
+            const alertBox = document.getElementById('statusAlert');
+            const spinBtn = document.getElementById('spinCenterBtn');
+            const spinBtnText = document.getElementById('spinBtnText');
+            const hintText = document.getElementById('wheelHint');
+
+            if (!cedulaInput || !nombreInput) return;
+
+            const db = getDB();
+            const today = getTodayDateString();
+            const existingUser = db[cedulaInput];
+
+            if (existingUser && existingUser.lastSpinDate === today && !hasExtraTurn) {
+                // User already played today
+                alertBox.className = "mt-4 p-4 rounded-xl text-sm font-medium bg-red-50 border-red-200 text-red-700 flex items-center gap-3";
+                alertBox.innerHTML = `
+                    <i class="fa-solid fa-circle-exclamation text-xl text-red-500"></i>
+                    <div>
+                        <strong>¡Intento diario agotado!</strong><br>
+                        Hola ${existingUser.nombre}, ya participaste hoy. Resultado registrado: 
+                        <span class="underline font-bold">${existingUser.lastPrize}</span>. ¡Te esperamos mañana!
+                    </div>
+                `;
+                alertBox.classList.remove('hidden');
+                spinBtn.disabled = true;
+                spinBtnText.textContent = "AGOTADO";
+                hintText.textContent = "❌ Ya participaste hoy. ¡Regresa mañana por más premios!";
+                activeUser = null;
+            } else {
+                // Eligible to play
+                activeUser = {
+                    cedula: cedulaInput,
+                    nombre: nombreInput
+                };
+
+                alertBox.className = "mt-4 p-4 rounded-xl text-sm font-medium bg-green-50 border-green-200 text-green-700 flex items-center gap-3";
+                alertBox.innerHTML = `
+                    <i class="fa-solid fa-circle-check text-xl text-green-500"></i>
+                    <div>
+                        <strong>¡Registro Validado!</strong><br>
+                        Hola ${nombreInput}, presiona el botón en el centro de la ruleta para girar.
+                    </div>
+                `;
+                alertBox.classList.remove('hidden');
+                
+                spinBtn.disabled = false;
+                spinBtnText.textContent = hasExtraTurn ? "2DO TIRO" : "GIRAR";
+                spinBtn.classList.add('animate-bounce');
+                hintText.textContent = hasExtraTurn ? "🔄 ¡Tienes una SEGUNDA OPORTUNIDAD! Presiona GIRAR de nuevo." : "🎉 ¡Todo listo! Toca el centro de la ruleta para hacerla girar.";
+            }
+        }
+
+        // 4. Spin Dynamic Mechanism
+        function triggerSpin() {
+            if (isSpinning || !activeUser) return;
+
+            const spinBtn = document.getElementById('spinCenterBtn');
+            spinBtn.classList.remove('animate-bounce');
+            spinBtn.disabled = true;
+            isSpinning = true;
+
+            // Pick Index based on probabilities
+            const selectedIndex = getWeightedRandomSliceIndex();
+            const targetSliceAngle = (numSlices - selectedIndex - 0.5) * sliceAngle;
+            const fullTurns = 6 * 2 * Math.PI;
+            const totalTargetAngle = currentAngle + fullTurns + (targetSliceAngle - (currentAngle % (2 * Math.PI)));
+
+            const startAngle = currentAngle;
+            const duration = 5000; // 5 seconds spin animation
+            const startTime = performance.now();
+            let lastSoundSegment = -1;
+
+            function animateSpin(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Ease out cubic function for realistic deceleration
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                currentAngle = startAngle + (totalTargetAngle - startAngle) * easeOut;
+
+                // Sound Effect calculation per slice boundary
+                const currentNormalizedAngle = (currentAngle % (2 * Math.PI));
+                const currentSegment = Math.floor(currentNormalizedAngle / sliceAngle);
+                if (currentSegment !== lastSoundSegment) {
+                    playTickSound();
+                    lastSoundSegment = currentSegment;
+                }
+
+                drawWheel();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateSpin);
+                } else {
+                    isSpinning = false;
+                    finishSpin(selectedIndex);
+                }
+            }
+
+            requestAnimationFrame(animateSpin);
+        }
+
+        // 5. Spin Finished Callback
+        function finishSpin(winningIndex) {
+            const wonOption = prizes[winningIndex];
+            const today = getTodayDateString();
+
+            // Case A: Won a Second Opportunity
+            if (wonOption.isExtraTurn) {
+                hasExtraTurn = true;
+                const spinBtn = document.getElementById('spinCenterBtn');
+                spinBtn.disabled = false;
+                spinBtn.classList.add('animate-bounce');
+                document.getElementById('spinBtnText').textContent = "2DO TIRO";
+                
+                const alertBox = document.getElementById('statusAlert');
+                alertBox.className = "mt-4 p-4 rounded-xl text-sm font-medium bg-blue-50 border-blue-200 text-blue-700 flex items-center gap-3";
+                alertBox.innerHTML = `
+                    <i class="fa-solid fa-rotate-right text-xl text-blue-500"></i>
+                    <div>
+                        <strong>¡GANASTE UNA SEGUNDA OPORTUNIDAD! 🔄</strong><br>
+                        ¡Vuelve a pulsar el botón del centro de la ruleta para realizar tu segundo giro de hoy!
+                    </div>
+                `;
+                document.getElementById('wheelHint').textContent = "🔄 ¡Gana otra vez! Presiona el botón del centro para tu 2do intento.";
+                return;
+            }
+
+            // Case B: Regular Prize or Better Luck Next Time
+            hasExtraTurn = false;
+            const couponCode = wonOption.isPrize ? 'EMP-' + Math.random().toString(36).substring(2, 7).toUpperCase() : 'N/A';
+
+            // Save to Local Database (Primary Key: Cedula)
+            const db = getDB();
+            db[activeUser.cedula] = {
+                cedula: activeUser.cedula,
+                nombre: activeUser.nombre,
+                lastSpinDate: today,
+                lastPrize: wonOption.label,
+                couponCode: couponCode,
+                timestamp: new Date().toLocaleString()
+            };
+            saveDB(db);
+
+            if (wonOption.isPrize) {
+                // Trigger Confetti for prizes
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+
+                // Show Winner Modal
+                document.getElementById('modalUserName').textContent = activeUser.nombre;
+                document.getElementById('modalPrizeTitle').textContent = wonOption.label;
+                document.getElementById('modalCedula').textContent = activeUser.cedula;
+                document.getElementById('modalDate').textContent = new Date().toLocaleDateString();
+                document.getElementById('modalCouponCode').textContent = couponCode;
+
+                const modal = document.getElementById('winnerModal');
+                const modalContent = document.getElementById('winnerModalContent');
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modalContent.classList.remove('scale-95', 'opacity-0');
+                    modalContent.classList.add('scale-100', 'opacity-100');
+                }, 50);
+            } else {
+                // Better luck next time message
+                const alertBox = document.getElementById('statusAlert');
+                alertBox.className = "mt-4 p-4 rounded-xl text-sm font-medium bg-amber-50 border-amber-200 text-amber-800 flex items-center gap-3";
+                alertBox.innerHTML = `
+                    <i class="fa-solid fa-face-smile text-xl text-amber-600"></i>
+                    <div>
+                        <strong>¡Gracias por participar, ${activeUser.nombre}!</strong><br>
+                        Salió "Suerte a la próxima". Recuerda que puedes volver a intentarlo mañana.
+                    </div>
+                `;
+            }
+
+            // Reset UI State
+            document.getElementById('spinBtnText').textContent = "AGOTADO";
+            document.getElementById('wheelHint').textContent = "✅ Tu participación de hoy ha finalizado.";
+        }
+
+        function closeWinnerModal() {
+            const modal = document.getElementById('winnerModal');
+            const modalContent = document.getElementById('winnerModalContent');
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // 6. Admin Panel Modal & Password Authentication (PIN: 9595)
+        function openAdminAuthModal() {
+            document.getElementById('adminPassInput').value = '';
+            document.getElementById('adminAuthError').classList.add('hidden');
+            document.getElementById('adminAuthModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('adminPassInput').focus(), 100);
+        }
+
+        function closeAdminAuthModal() {
+            document.getElementById('adminAuthModal').classList.add('hidden');
+        }
+
+        function submitAdminAuth(event) {
+            event.preventDefault();
+            const pass = document.getElementById('adminPassInput').value;
+            if (pass === "9595") {
+                closeAdminAuthModal();
+                renderAdminTable();
+                document.getElementById('adminModal').classList.remove('hidden');
+            } else {
+                document.getElementById('adminAuthError').classList.remove('hidden');
+            }
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.add('hidden');
+        }
+
+        function renderAdminTable(filter = '') {
+            const db = getDB();
+            const tbody = document.getElementById('adminTableBody');
+            tbody.innerHTML = '';
+
+            const users = Object.values(db);
+
+            const filteredUsers = users.filter(user => 
+                user.cedula.toLowerCase().includes(filter.toLowerCase()) || 
+                user.nombre.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            if (filteredUsers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No hay registros de clientes aún.</td></tr>`;
+                return;
+            }
+
+            filteredUsers.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 border-b border-slate-100';
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-slate-800">${user.cedula}</td>
+                    <td class="p-3 font-medium">${user.nombre}</td>
+                    <td class="p-3">${user.lastSpinDate}</td>
+                    <td class="p-3"><span class="px-2 py-1 rounded bg-amber-100 text-amber-800 font-bold">${user.lastPrize}</span></td>
+                    <td class="p-3 text-center font-mono font-bold text-salsa-600">${user.couponCode || 'N/A'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterAdminTable() {
+            const searchVal = document.getElementById('adminSearch').value;
+            renderAdminTable(searchVal);
+        }
+
+        function clearDatabase() {
+            if (window.confirm("¿Estás seguro de que deseas borrar la base de datos de clientes?")) {
+                localStorage.removeItem(DB_KEY);
+                renderAdminTable();
+            }
+        }
+
+        function exportToCSV() {
+            const db = getDB();
+            const users = Object.values(db);
+            if (users.length === 0) return;
+
+            let csvContent = "data:text/csv;charset=utf-8,Cedula,Nombre,FechaGiro,Premio,CodigoCupon\n";
+            users.forEach(u => {
+                csvContent += `"${u.cedula}","${u.nombre}","${u.lastSpinDate}","${u.lastPrize}","${u.couponCode}"\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `clientes_don_empanada_${getTodayDateString()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
